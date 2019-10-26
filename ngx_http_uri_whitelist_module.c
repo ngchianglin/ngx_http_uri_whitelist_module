@@ -77,14 +77,17 @@ static char *ngx_http_wh_list_cfg(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_wh_list_bypass_cfg(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
     
-static ngx_whl_pnode_t *create_node(const u_char* path,  size_t plen, 
+static ngx_whl_pnode_t *ngx_http_wh_create_node(const u_char* path,  size_t plen, 
     ngx_conf_t *cf);
-static ngx_whl_pnode_t *add_child(const u_char *path, ngx_whl_pnode_t *parent,
+static ngx_whl_pnode_t *ngx_http_wh_add_child(const u_char *path, 
+    ngx_whl_pnode_t *parent, ngx_conf_t *cf);
+static size_t ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, 
     ngx_conf_t *cf);
-size_t resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf);
-size_t add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf);
-size_t check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root);
-ngx_whl_pnode_t *check_path_seg(const u_char* path_seg, size_t len, 
+static size_t ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, 
+    ngx_conf_t *cf);
+static size_t ngx_http_wh_check_path_exists(u_char* path, size_t len, 
+    ngx_whl_pnode_t *root);
+static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, 
     ngx_whl_pnode_t *node);
  
 /* Module Directives */
@@ -190,7 +193,7 @@ ngx_http_uri_whitelist_merge_loc_conf(ngx_conf_t *cf, void *parent,
     if (conf->uri_tree == NULL) {
         
         if (prev->uri_tree == NULL) {
-            conf->uri_tree = create_node( (u_char *)"/", 1, cf);
+            conf->uri_tree = ngx_http_wh_create_node( (u_char *)"/", 1, cf);
             if (conf->uri_tree == NULL) {
                 return NGX_CONF_ERROR; 
             }
@@ -236,7 +239,7 @@ ngx_http_wh_list_cfg(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     
     slcf = conf; 
     if (slcf->uri_tree == NULL) {
-        slcf->uri_tree = create_node( (u_char *)"/", 1, cf);
+        slcf->uri_tree = ngx_http_wh_create_node( (u_char *)"/", 1, cf);
         if (slcf->uri_tree == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -244,7 +247,7 @@ ngx_http_wh_list_cfg(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
   
     root = slcf->uri_tree;
     
-    if (!add_path(uri, root, cf)) {
+    if (!ngx_http_wh_add_path(uri, root, cf)) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "[URI_WHITELIST]: "
             "Error cannot add uri to whitelist");
         return NGX_CONF_ERROR;
@@ -345,7 +348,7 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
     }
     
     
-    if (!check_path_exists(r->uri.data, r->uri.len, slcf->uri_tree)) {
+    if (!ngx_http_wh_check_path_exists(r->uri.data, r->uri.len, slcf->uri_tree)) {
         /* If uri is not present in whitelist */
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
             "[URI_WHITELIST] : Access Denied for [ %V ] ", &r->uri);
@@ -358,7 +361,7 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
 
 /* Creates a path node based on a part of the uri */
 static ngx_whl_pnode_t * 
-create_node(const u_char* path,  size_t plen, ngx_conf_t *cf)
+ngx_http_wh_create_node(const u_char* path,  size_t plen, ngx_conf_t *cf)
 {
     size_t sz;
     ngx_str_t *sgmt;
@@ -406,7 +409,7 @@ create_node(const u_char* path,  size_t plen, ngx_conf_t *cf)
 
 /* Adds a uri path to the uri tree */
 static ngx_whl_pnode_t *
-add_child(const u_char *path, ngx_whl_pnode_t *parent, ngx_conf_t *cf)
+ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 {
     size_t plen, i;
     ngx_whl_pnode_t *node;
@@ -434,14 +437,14 @@ add_child(const u_char *path, ngx_whl_pnode_t *parent, ngx_conf_t *cf)
     }
     
     /* uri segment path does not exists allocate new child */
-    node = create_node(path, plen, cf);
+    node = ngx_http_wh_create_node(path, plen, cf);
     
     if (node == NULL) {
         return NULL;
     }
     
     if (i >= parent->maxchild) {
-        if (!resize_children(parent, cf)) {
+        if (!ngx_http_wh_resize_children(parent, cf)) {
             return NULL;
         }
     }
@@ -454,8 +457,8 @@ add_child(const u_char *path, ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 
 
 /* Resizes a node children array if original space is insufficient */
-size_t
-resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
+static size_t
+ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 {
     ngx_whl_pnode_t** old, **new; 
     size_t new_sz, i;
@@ -491,8 +494,8 @@ resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 
 
 /* Adds a uri to the uri tree */
-size_t
-add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
+static size_t
+ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 {
     size_t plen, last, index;
     u_char *p, c, tmp[NGX_WHL_MAXPATHSZ];
@@ -523,7 +526,7 @@ add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
             index++;
             
             tmp[index] = '\0';
-            node = add_child(tmp, node, cf);
+            node = ngx_http_wh_add_child(tmp, node, cf);
             
             if (node == NULL) {
                 return 0; 
@@ -551,7 +554,7 @@ add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
         }
         
         tmp[index] = '\0';
-        node = add_child(tmp, node, cf);
+        node = ngx_http_wh_add_child(tmp, node, cf);
         if (node == NULL) {
             return 0;
         }
@@ -566,8 +569,8 @@ add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 }
 
 /* Checks if a uri path is present in the uri tree */
-size_t 
-check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
+static size_t 
+ngx_http_wh_check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
 {
     size_t plen, index, last;
     u_char c, *p, tmp[NGX_WHL_MAXPATHSZ]; 
@@ -608,7 +611,7 @@ check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
             index++;
             tmp[index] = '\0';
             
-            node = check_path_seg(tmp, index, node); 
+            node = ngx_http_wh_check_path_seg(tmp, index, node); 
             if (node == NULL) {
                 return 0;
             }
@@ -636,7 +639,7 @@ check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
         }
         
         tmp[index]='\0';
-        node = check_path_seg(tmp, index, node); 
+        node = ngx_http_wh_check_path_seg(tmp, index, node); 
         
         if (node == NULL) {
             return 0; 
@@ -655,8 +658,8 @@ check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
 }
 
 /* Checks if a uri segment exists in children */
-ngx_whl_pnode_t* 
-check_path_seg(const u_char* path_seg, size_t len, ngx_whl_pnode_t *node)
+static ngx_whl_pnode_t * 
+ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, ngx_whl_pnode_t *node)
 {
     size_t i; 
     ngx_whl_pnode_t *child; 
