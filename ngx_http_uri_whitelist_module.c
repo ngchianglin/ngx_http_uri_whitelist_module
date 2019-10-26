@@ -107,7 +107,7 @@ static ngx_command_t  ngx_http_uri_whitelist_commands[] = {
       0,
       NULL },
       
-    { ngx_string("wh_bypass_types"),
+    { ngx_string("wh_list_bypass"),
       NGX_HTTP_LOC_CONF | NGX_CONF_1MORE,
       ngx_http_wh_list_bypass_cfg,
       NGX_HTTP_LOC_CONF_OFFSET,
