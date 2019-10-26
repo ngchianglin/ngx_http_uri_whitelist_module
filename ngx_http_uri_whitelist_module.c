@@ -77,8 +77,8 @@ static char *ngx_http_wh_list_cfg(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_wh_list_bypass_cfg(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
     
-static ngx_whl_pnode_t *ngx_http_wh_create_node(const u_char* path,  size_t plen, 
-    ngx_conf_t *cf);
+static ngx_whl_pnode_t *ngx_http_wh_create_node(const u_char* path,  
+    size_t plen, ngx_conf_t *cf);
 static ngx_whl_pnode_t *ngx_http_wh_add_child(const u_char *path, 
     ngx_whl_pnode_t *parent, ngx_conf_t *cf);
 static size_t ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, 
@@ -87,8 +87,8 @@ static size_t ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root,
     ngx_conf_t *cf);
 static size_t ngx_http_wh_check_path_exists(u_char* path, size_t len, 
     ngx_whl_pnode_t *root);
-static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, 
-    ngx_whl_pnode_t *node);
+static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(const u_char* path_seg, 
+    size_t len, ngx_whl_pnode_t *node);
  
 /* Module Directives */
 static ngx_command_t  ngx_http_uri_whitelist_commands[] = {
@@ -128,8 +128,8 @@ static ngx_http_module_t  ngx_http_uri_whitelist_module_ctx = {
     NULL,                                  /* create server configuration */
     NULL,                                  /* merge server configuration */
 
-    ngx_http_uri_whitelist_create_loc_conf,   /* create location configuration */
-    ngx_http_uri_whitelist_merge_loc_conf     /* merge location configuration */
+    ngx_http_uri_whitelist_create_loc_conf,/* create location configuration */
+    ngx_http_uri_whitelist_merge_loc_conf  /* merge location configuration */
 };
 
 
@@ -348,7 +348,9 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
     }
     
     
-    if (!ngx_http_wh_check_path_exists(r->uri.data, r->uri.len, slcf->uri_tree)) {
+    if (!ngx_http_wh_check_path_exists(r->uri.data, 
+        r->uri.len, slcf->uri_tree)) 
+    {
         /* If uri is not present in whitelist */
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
             "[URI_WHITELIST] : Access Denied for [ %V ] ", &r->uri);
@@ -409,7 +411,8 @@ ngx_http_wh_create_node(const u_char* path,  size_t plen, ngx_conf_t *cf)
 
 /* Adds a uri path to the uri tree */
 static ngx_whl_pnode_t *
-ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent, ngx_conf_t *cf)
+ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent, 
+    ngx_conf_t *cf)
 {
     size_t plen, i;
     ngx_whl_pnode_t *node;
@@ -659,7 +662,8 @@ ngx_http_wh_check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
 
 /* Checks if a uri segment exists in children */
 static ngx_whl_pnode_t * 
-ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, ngx_whl_pnode_t *node)
+ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, 
+    ngx_whl_pnode_t *node)
 {
     size_t i; 
     ngx_whl_pnode_t *child; 
