@@ -1,0 +1,8 @@
+ngx_module_type=HTTP
+ngx_module_name=ngx_http_uri_whitelist_module
+ngx_module_srcs="$ngx_addon_dir/ngx_http_uri_whitelist_module.c"
+
+. auto/module
+
+ngx_addon_name=$ngx_module_name
+
