@@ -211,11 +211,11 @@ ngx_http_uri_whitelist_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static char *
 ngx_http_wh_list_cfg(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    size_t len; 
-    ngx_str_t *value;
-    u_char *uri; 
-    ngx_whl_pnode_t *root;
-    ngx_http_uri_whitelist_loc_conf_t *slcf;
+    size_t                             len;
+    u_char                             *uri;
+    ngx_str_t                          *value; 
+    ngx_whl_pnode_t                    *root;
+    ngx_http_uri_whitelist_loc_conf_t  *slcf;
     
     if (cf->args->nelts < 2) {
         return NGX_CONF_ERROR;
@@ -261,10 +261,10 @@ static char *
 ngx_http_wh_list_bypass_cfg( ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-    size_t i;
-    ngx_str_t *value;
-    ngx_str_t *bp; 
-    ngx_http_uri_whitelist_loc_conf_t *slcf = conf; 
+    size_t                             i;
+    ngx_str_t                          *value;
+    ngx_str_t                          *bp; 
+    ngx_http_uri_whitelist_loc_conf_t  *slcf = conf; 
     
     value = cf->args->elts;
     
@@ -311,9 +311,9 @@ ngx_http_uri_whitelist_init(ngx_conf_t *cf)
 static ngx_int_t
 ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
 {
-    size_t i; 
-    ngx_str_t *ext; 
-    ngx_http_uri_whitelist_loc_conf_t *slcf;
+    size_t                             i; 
+    ngx_str_t                          *ext; 
+    ngx_http_uri_whitelist_loc_conf_t  *slcf;
     
     if (r->uri.len == 0) {
         return NGX_HTTP_BAD_REQUEST;
@@ -341,10 +341,13 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
     /* Check for extensions bypass */
     ext = slcf->bp_extens->elts;
     for (i=0; i < slcf->bp_extens->nelts; i++) {
+        
         if (r->exten.len == ext[i].len 
-            && ngx_strncmp(r->exten.data, ext[i].data, r->exten.len) == 0) {
+            && ngx_strncmp(r->exten.data, ext[i].data, r->exten.len) == 0) 
+        {
             return NGX_DECLINED; 
         }
+        
     }
     
     
@@ -365,9 +368,9 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
 static ngx_whl_pnode_t * 
 ngx_http_wh_create_node(const u_char* path,  size_t plen, ngx_conf_t *cf)
 {
-    size_t sz;
-    ngx_str_t *sgmt;
-    ngx_whl_pnode_t *node; 
+    size_t           sz;
+    ngx_str_t        *sgmt;
+    ngx_whl_pnode_t  *node; 
     
     if (path == NULL)
         return NULL;
@@ -414,8 +417,8 @@ static ngx_whl_pnode_t *
 ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent, 
     ngx_conf_t *cf)
 {
-    size_t plen, i;
-    ngx_whl_pnode_t *node;
+    size_t           plen, i;
+    ngx_whl_pnode_t  *node;
     
     if (path == NULL || parent == NULL) {
         return NULL;
@@ -434,9 +437,11 @@ ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent,
     for (i = 0; i < parent->num_child; i++) {
     /* check if segment path already exists */   
         node = parent->children[i];
-        if( node->segment->len == plen && 
-            ngx_strncmp(path, node->segment->data, plen) == 0 ) 
+        if(node->segment->len == plen && 
+            ngx_strncmp(path, node->segment->data, plen) == 0) 
+        {        
             return node;
+        }
     }
     
     /* uri segment path does not exists allocate new child */
@@ -463,8 +468,8 @@ ngx_http_wh_add_child(const u_char *path, ngx_whl_pnode_t *parent,
 static size_t
 ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 {
-    ngx_whl_pnode_t** old, **new; 
-    size_t new_sz, i;
+    size_t           new_sz, i;
+    ngx_whl_pnode_t  **old, **new; 
     
     if (parent == NULL) {
         return 0;
@@ -500,9 +505,9 @@ ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 static size_t
 ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 {
-    size_t plen, last, index;
-    u_char *p, c, tmp[NGX_WHL_MAXPATHSZ];
-    ngx_whl_pnode_t *node; 
+    size_t           plen, last, index;
+    u_char           *p, c, tmp[NGX_WHL_MAXPATHSZ];
+    ngx_whl_pnode_t  *node; 
     
     if (path == NULL || root == NULL) {
         return 0;
@@ -575,9 +580,9 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 static size_t 
 ngx_http_wh_check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
 {
-    size_t plen, index, last;
-    u_char c, *p, tmp[NGX_WHL_MAXPATHSZ]; 
-    ngx_whl_pnode_t *node;
+    size_t           plen, index, last;
+    u_char           c, *p, tmp[NGX_WHL_MAXPATHSZ]; 
+    ngx_whl_pnode_t  *node;
     
     if (path == NULL || root == NULL) {
         return 0;
@@ -665,8 +670,8 @@ static ngx_whl_pnode_t *
 ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, 
     ngx_whl_pnode_t *node)
 {
-    size_t i; 
-    ngx_whl_pnode_t *child; 
+    size_t           i; 
+    ngx_whl_pnode_t  *child; 
     
     if (path_seg == NULL || node == NULL) {
         return NULL;
@@ -693,4 +698,5 @@ ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len,
     return NULL; 
     
 }
+
 
