@@ -315,6 +315,13 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
     ngx_str_t                          *ext; 
     ngx_http_uri_whitelist_loc_conf_t  *slcf;
     
+#if WHL_DEBUG    
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "[URI_WHITELIST]: %V",&r->uri);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "[URI_WHITELIST] extension: %V",&r->exten);
+#endif
+
     if (r->uri.len == 0) {
         return NGX_HTTP_BAD_REQUEST;
     }
@@ -331,13 +338,7 @@ ngx_http_uri_whitelist_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
     
-#if WHL_DEBUG    
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "[URI_WHITELIST]: %V",&r->uri);
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "[URI_WHITELIST] extension: %V",&r->exten);
-#endif
-    
+ 
     /* Check for extensions bypass */
     ext = slcf->bp_extens->elts;
     for (i=0; i < slcf->bp_extens->nelts; i++) {
