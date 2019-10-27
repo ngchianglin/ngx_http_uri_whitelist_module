@@ -1,14 +1,13 @@
 # ngx_http_uri_whitelist_module
-An nginx module that allows access to URI based on a whitelist. 
+An nginx module that allows access to URIs based on a whitelist. 
 
 ## Introduction
-This nginx module blocks access to URLs that are not in a whitelist, it displays HTTP 404 error. It can be used to protect website, 
-web application and api endpoint by restricting access to only specific URL. 
+This nginx module blocks access to URLs that are not in a whitelist, it displays HTTP 404 error. It can be used to protect website, web application and api endpoint by restricting access to only specific URL. 
 
 Vulnerabilities that arise from misconfiguration of application framework that exposes sensitive administrative interface 
-can be mitigated through the use of this module. 
+can be mitigated through the use of this module. Accidental disclosure of sensitive data through the uploading of sensitive files can be mitigated as well. 
 
-The module can be used directly on a site hosted by nginx or with nginx as a reverse proxy. 
+The module can be used directly on a site hosted by nginx or with nginx as a reverse proxy for a backend web application or website. 
 
 ## Installation
 
@@ -47,6 +46,7 @@ Specifies file extensions that will bypass the whitelisting. For example,
 
 This example will allow access to all URLs that end with .jpg, .png, .gif. Basically image files with such extensions will be 
 accessible without whitelisting. 
+The bypass directive is for convenience and should be used with care. For the best protection, don't use any bypass, all URLs including those for images should be whitelisted explicitly. 
 
 **wh_list_uri**
 
@@ -57,9 +57,9 @@ accessible without whitelisting.
 Specifies the URL to be whitelisted. The directive can be specified multiple times for different URLs. Each URL must start with 
 a "/" and is relative the web document root. Example, 
 
-    wh_list_uri /
-    wh_list_uri /index.html
-    wh_list_uri /myapplication/index.php
+    wh_list_uri /;
+    wh_list_uri /index.html;
+    wh_list_uri /myapplication/index.php;
  
 Assuming the web application is hosted on domain, nighthour.sg, with default index pages configured as index.html and index.php.
 The above setting will allow access to https://nighthour.sg, https://nighthour.sg/, https://nighthour.sg/index.html, 
@@ -70,28 +70,27 @@ error. This is because /myapplication/ is not explicitly whitelisted.
 
 Another example, 
 
-    wh_list_uri "/index.html"
+    wh_list_uri "/index.html";
 
-This will allows access to https://nighthour.sg/index.html but https://nighthour.sg and https://nighthour.sg/ will be blocked with
-HTTP 404 error. This is because / is not explicitly whitelisted. 
+This will allows access to https://nighthour.sg/index.html but https://nighthour.sg and https://nighthour.sg/ will be blocked with HTTP 404 error. This is because / is not explicitly whitelisted. 
 
 If you have a long list of URLs to be whitelisted. To avoid cluttering the nginx location context, the nginx include directive can
 be used to specify another file holding the listing of whitelisted URLs. 
 
 Example, 
 
-    include mywhitelist.conf
+    include mywhitelist.conf;
 
 Inside mywhitelist.conf 
 
-    wh_list_uri /
-    wh_list_uri /index.html
-    wh_list_uri "/mysecondfile.php"
-    wh_list_uri /apps/myfile.php
+    wh_list_uri /;
+    wh_list_uri /index.html;
+    wh_list_uri "/mysecondfile.php";
+    wh_list_uri /apps/myfile.php;
     ...
 
 
-## Example Configuration Reverse Proxy
+## Example Configuration
 
 The following is a simple example for a simple reverse proxy setup with no caching, for nginx location context. 
 
@@ -99,6 +98,7 @@ The following is a simple example for a simple reverse proxy setup with no cachi
             wh_list on;
             wh_list_uri "/";
             wh_list_uri "/index.html";
+            wh_list_uri "/api/myapp.jsp";
             
             wh_list_bypass jpg png gif; 
             include mywhitelist.conf; 
@@ -107,6 +107,24 @@ The following is a simple example for a simple reverse proxy setup with no cachi
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_pass http://127.0.0.1:8080;
+    }
+
+The following is a simple example of a location context for hosting on nginx itself. Notice that no bypass directive is specified. For the best protection, bypass directive should not be used. All URLS meant to be accessible should be whitelisted 
+explicitly. 
+
+    location / {
+            root /opt/www/html;
+            index index.html;
+
+            wh_list on;
+            wh_list_uri "/test";
+            wh_list_uri "/";
+            wh_list_uri "/index.html";
+            wh_list_uri "/images/title.png";
+            wh_list_uri /images/logo.gif;
+            wh_list_uri /images/photo1.jpg; 
+             
+            include mywhitelist.conf;            
     }
 
 
@@ -121,5 +139,6 @@ Gpg Signed commits are used for committing the source files.
 > Look at the repository commits tab for the verified label for each commit, or refer to [https://www.nighthour.sg/git-gpg.html](https://www.nighthour.sg/git-gpg.html) for instructions on verifying the git commit.
 >
 > A userful link on how to verify gpg signature is available at [https://github.com/blog/2144-gpg-signature-verification](https://github.com/blog/2144-gpg-signature-verification)
+
 
 
