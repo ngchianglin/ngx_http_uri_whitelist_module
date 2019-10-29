@@ -7,6 +7,8 @@ This nginx module blocks access to URLs that are not in a whitelist, it displays
 Vulnerabilities that arise from misconfiguration of application framework that exposes sensitive administrative interface 
 can be mitigated through the use of this module. Accidental disclosure of sensitive data through the uploading of sensitive files can be mitigated as well. 
 
+The module does not check the query string or query parameters of a URL. 
+
 The module can be used directly on a site hosted by nginx or with nginx as a reverse proxy for a backend web application or website. 
 
 ## Installation
@@ -55,7 +57,9 @@ The bypass directive is for convenience and should be used with care. For the be
 * context: Location
 
 Specifies the URL to be whitelisted. The directive can be specified multiple times for different URLs. Each URL must start with 
-a "/" and is relative the web document root. Example, 
+a "/" and is relative the web document root. Do not specify any query string, the module does not check query string. 
+
+Usage Example, 
 
     wh_list_uri /;
     wh_list_uri /index.html;
@@ -74,8 +78,7 @@ Another example,
 
 This will allows access to https://nighthour.sg/index.html but https://nighthour.sg and https://nighthour.sg/ will be blocked with HTTP 404 error. This is because / is not explicitly whitelisted. 
 
-If you have a long list of URLs to be whitelisted. To avoid cluttering the nginx location context, the nginx include directive can
-be used to specify another file holding the listing of whitelisted URLs. 
+If you have a long list of URLs to be whitelisted. To avoid cluttering the nginx location context, the nginx include directive can be used to specify another file holding the listing of whitelisted URLs. 
 
 Example, 
 
@@ -133,12 +136,17 @@ explicitly.
 The module is released under the BSD license (same as Nginx) and there are no warranties of any kinds. 
 Basically use it at your own risk ! Read and understand the License carefully.
 
+## Further Details
+
+Refer to
+[https://www.nighthour.sg/articles/2019/developing-nginx-url-whitelisting-module.html](https://www.nighthour.sg/articles/2019/developing-nginx-url-whitelisting-module.html) for an article on how this module is implemented.
+
+
 ## Source signature
 Gpg Signed commits are used for committing the source files.
 
 > Look at the repository commits tab for the verified label for each commit, or refer to [https://www.nighthour.sg/git-gpg.html](https://www.nighthour.sg/git-gpg.html) for instructions on verifying the git commit.
 >
 > A userful link on how to verify gpg signature is available at [https://github.com/blog/2144-gpg-signature-verification](https://github.com/blog/2144-gpg-signature-verification)
-
 
 
