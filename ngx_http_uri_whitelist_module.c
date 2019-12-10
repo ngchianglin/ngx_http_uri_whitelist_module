@@ -42,10 +42,11 @@
 #define WHL_DEBUG 0
 #endif
 
-#define  NGX_WHL_INIT_CHIDREN_SZ  64
+#define  NGX_WHL_INIT_CHIDREN_SZ  8
 #define  NGX_WHL_MAXPATHSZ  2048
 #define  NGX_WHL_MAX_CHILDREN  65536
-#define  NGX_WHL_TH_BSEARCH 10
+#define  NGX_WHL_TH_BSEARCH  10
+#define  NGX_WHL_MAX_NEST  10
 
 typedef struct ngx_whl_pnode_s  ngx_whl_pnode_t;
 
@@ -515,7 +516,7 @@ ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 static size_t
 ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 {
-    size_t           plen, last, index;
+    size_t           plen, last, index, nested;
     u_char           *p, c, tmp[NGX_WHL_MAXPATHSZ];
     ngx_whl_pnode_t  *node; 
     
@@ -529,14 +530,15 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
     }
     
     p = path; 
-    index = last = 0;
+    index = last = nested = 0;
     node = root; 
   
     while ((c=*p++) != '\0') {
     
         switch(c) {            
         case '/':
-            if (index + 1 >= NGX_WHL_MAXPATHSZ) {
+            if (index + 1 >= NGX_WHL_MAXPATHSZ 
+                || nested > NGX_WHL_MAX_NEST) {
                 return 0;
             }
             
@@ -550,6 +552,7 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
                 return 0; 
             }
             
+            nested++; 
             index = last = 0;     
             break;
             
@@ -567,7 +570,8 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
     }
     
     if (last) {
-        if (index >= NGX_WHL_MAXPATHSZ) {
+        if (index >= NGX_WHL_MAXPATHSZ
+            || nested > NGX_WHL_MAX_NEST) {
             return 0; 
         }
         
@@ -575,7 +579,7 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
         node = ngx_http_wh_add_child(tmp, node, cf);
         if (node == NULL) {
             return 0;
-        }
+        } 
         
     } else {
         /* node ends with '/' */
@@ -853,5 +857,6 @@ ngx_http_wh_check_path_seg(u_char* path_seg, size_t len,
     return NULL; 
     
 }
+
 
 
