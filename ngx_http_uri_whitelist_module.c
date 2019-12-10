@@ -45,6 +45,7 @@
 #define  NGX_WHL_INIT_CHIDREN_SZ  64
 #define  NGX_WHL_MAXPATHSZ  2048
 #define  NGX_WHL_MAX_CHILDREN  65536
+#define  NGX_WHL_TH_BSEARCH 10
 
 typedef struct ngx_whl_pnode_s  ngx_whl_pnode_t;
 
@@ -87,11 +88,12 @@ static size_t ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root,
     ngx_conf_t *cf);
 static size_t ngx_http_wh_check_path_exists(u_char* path, size_t len, 
     ngx_whl_pnode_t *root);
-static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(const u_char* path_seg, 
+static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(u_char* path_seg, 
     size_t len, ngx_whl_pnode_t *node);
     
 static void ngx_http_wh_sort_children(ngx_whl_pnode_t *root);
 static int ngx_http_wh_compar(const void *node1, const void *node2);
+static int ngx_http_wh_bcompar(const void *key, const void *node);
 
 
  
@@ -610,7 +612,7 @@ ngx_http_wh_sort_children(ngx_whl_pnode_t *root)
 }
 
 
-/* Comparator function for qsort and bsearch */
+/* Comparator function for qsort */
 static int
 ngx_http_wh_compar(const void *node1, const void *node2)
 {
@@ -650,6 +652,56 @@ ngx_http_wh_compar(const void *node1, const void *node2)
             len--; 
         }
           
+    }
+    
+    return 0; 
+    
+}
+
+
+/* Comparator function for bsearch */
+static int
+ngx_http_wh_bcompar(const void *key, const void *node)
+{
+    size_t              len; 
+    u_char              *c1, *c2; 
+    ngx_str_t           *pseg; 
+    ngx_whl_pnode_t     *p1;
+    
+    pseg =  (ngx_str_t *) key; 
+    p1 = *(ngx_whl_pnode_t **) node; 
+    
+    if (pseg->len < p1->segment->len) {
+        return -1;
+    }
+    
+    if (pseg->len >  p1->segment->len) {
+        return 1;
+    }
+    
+    
+    if (pseg->len == p1->segment->len) {
+        
+        len = p1->segment->len; 
+        c1 = pseg->data; 
+        c2 = p1->segment->data;
+       
+        while (len > 0) {
+            
+            if (*c1 < *c2) {
+                return -1;
+            }                
+            
+            if (*c1 > *c2) {
+                return 1; 
+            }
+            
+            c1++;
+            c2++;
+            len--;
+        }
+        
+        
     }
     
     return 0; 
@@ -748,10 +800,12 @@ ngx_http_wh_check_path_exists(u_char* path, size_t len, ngx_whl_pnode_t *root)
 
 /* Checks if a uri segment exists in children */
 static ngx_whl_pnode_t * 
-ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len, 
+ngx_http_wh_check_path_seg(u_char* path_seg, size_t len, 
     ngx_whl_pnode_t *node)
 {
+    void             *bret; 
     size_t           i; 
+    ngx_str_t        *key; 
     ngx_whl_pnode_t  *child; 
     
     if (path_seg == NULL || node == NULL) {
@@ -762,8 +816,28 @@ ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len,
         return NULL;
     }
     
-    if(len == 1 && ngx_strncmp(path_seg, "/", len) == 0) {
+    if (len == 1 && ngx_strncmp(path_seg, "/", len) == 0) {
         return node;
+    }
+    
+    
+    /* Use binary search if number of children is larger than threshold */
+    if (node->num_child > NGX_WHL_TH_BSEARCH) {
+        
+        key->len = len;
+        key->data = path_seg; 
+       
+        bret = bsearch(key, node->children, node->num_child,
+                       sizeof(ngx_whl_pnode_t *), 
+                       ngx_http_wh_bcompar);
+                                             
+        if (bret == NULL) {
+            return NULL;
+        }            
+        
+        child = *(ngx_whl_pnode_t **)bret;
+        return child; 
+        
     }
     
     for(i = 0; i < node->num_child; i++) {
@@ -779,6 +853,5 @@ ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len,
     return NULL; 
     
 }
-
 
 
