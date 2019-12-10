@@ -89,6 +89,11 @@ static size_t ngx_http_wh_check_path_exists(u_char* path, size_t len,
     ngx_whl_pnode_t *root);
 static ngx_whl_pnode_t *ngx_http_wh_check_path_seg(const u_char* path_seg, 
     size_t len, ngx_whl_pnode_t *node);
+    
+static void ngx_http_wh_sort_children(ngx_whl_pnode_t *root);
+static int ngx_http_wh_compar(const void *node1, const void *node2);
+
+
  
 /* Module Directives */
 static ngx_command_t  ngx_http_uri_whitelist_commands[] = {
@@ -202,6 +207,8 @@ ngx_http_uri_whitelist_merge_loc_conf(ngx_conf_t *cf, void *parent,
         }
         
     }
+    
+    ngx_http_wh_sort_children(conf->uri_tree); 
     
     return NGX_CONF_OK;    
         
@@ -502,7 +509,7 @@ ngx_http_wh_resize_children(ngx_whl_pnode_t *parent, ngx_conf_t *cf)
 }
 
 
-/* Adds a uri to the uri tree */
+/* Adds a full URL to the uri tree */
 static size_t
 ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
 {
@@ -576,6 +583,79 @@ ngx_http_wh_add_path(u_char *path, ngx_whl_pnode_t *root, ngx_conf_t *cf)
     return 1;
     
 }
+
+
+/* Sorts all children path segment in a uri tree */
+static void
+ngx_http_wh_sort_children(ngx_whl_pnode_t *root)
+{
+    size_t  i;
+    
+    if (root == NULL) {
+        return;
+    }
+    
+    if (root->num_child > 0) {
+        
+        qsort(root->children, root->num_child, sizeof(ngx_whl_pnode_t *), 
+              ngx_http_wh_compar); 
+        
+        for (i = 0; i <  root->num_child; i++) {
+            ngx_http_wh_sort_children(root->children[i]);
+        }
+    }
+    
+    return; 
+    
+}
+
+
+/* Comparator function for qsort and bsearch */
+static int
+ngx_http_wh_compar(const void *node1, const void *node2)
+{
+    size_t           len; 
+    u_char           *c1, *c2; 
+    ngx_whl_pnode_t  *p1, *p2; 
+    
+    p1 = *(ngx_whl_pnode_t **) node1; 
+    p2 = *(ngx_whl_pnode_t **) node2; 
+    
+    if (p1->segment->len < p2->segment->len) {
+        return -1;
+    }
+    
+    if (p1->segment->len > p2->segment->len) {
+        return 1;
+    }
+    
+    if (p1->segment->len == p2->segment->len) {
+        
+        len = p1->segment->len; 
+        c1 = p1->segment->data;
+        c2 = p2->segment->data; 
+        
+        while (len > 0) {
+            
+            if (*c1 < *c2) {
+                return -1;
+            }                
+            
+            if (*c1 > *c2) {
+                return 1; 
+            }
+            
+            c1++;
+            c2++; 
+            len--; 
+        }
+          
+    }
+    
+    return 0; 
+    
+}
+
 
 /* Checks if a uri path is present in the uri tree */
 static size_t 
@@ -699,5 +779,6 @@ ngx_http_wh_check_path_seg(const u_char* path_seg, size_t len,
     return NULL; 
     
 }
+
 
 
