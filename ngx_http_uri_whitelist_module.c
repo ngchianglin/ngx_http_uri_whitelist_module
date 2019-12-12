@@ -45,7 +45,7 @@
 #define  NGX_WHL_INIT_CHIDREN_SZ  8
 #define  NGX_WHL_MAXPATHSZ  2048
 #define  NGX_WHL_MAX_CHILDREN  65536
-#define  NGX_WHL_TH_BSEARCH  10
+#define  NGX_WHL_TH_BSEARCH  6
 #define  NGX_WHL_MAX_NEST  10
 
 typedef struct ngx_whl_pnode_s  ngx_whl_pnode_t;
