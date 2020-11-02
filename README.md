@@ -17,7 +17,7 @@ Obtain a copy of the module source. To verify the signature of the module source
 
     git clone https://github.com/ngchianglin/ngx_http_uri_whitelist_module.git
     
-Download the latest stable version of nginx 1.16.1 from the https://nginx.org. Verify the integrity using the pgp signature 
+Download the latest stable version of nginx 1.18.0 from the https://nginx.org. Verify the integrity using the pgp signature 
 provided by Nginx. 
 
 Build nginx with the module using the option
