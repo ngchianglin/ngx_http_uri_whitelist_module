@@ -809,8 +809,9 @@ ngx_http_wh_check_path_seg(u_char* path_seg, size_t len,
 {
     void             *bret; 
     size_t           i; 
-    ngx_str_t        *key; 
+    ngx_str_t        key; 
     ngx_whl_pnode_t  *child; 
+
     
     if (path_seg == NULL || node == NULL) {
         return NULL;
@@ -823,15 +824,17 @@ ngx_http_wh_check_path_seg(u_char* path_seg, size_t len,
     if (len == 1 && ngx_strncmp(path_seg, "/", len) == 0) {
         return node;
     }
+
     
     
     /* Use binary search if number of children is larger than threshold */
     if (node->num_child > NGX_WHL_TH_BSEARCH) {
+
         
-        key->len = len;
-        key->data = path_seg; 
+        key.len = len;
+        key.data = path_seg; 
        
-        bret = bsearch(key, node->children, node->num_child,
+        bret = bsearch(&key, node->children, node->num_child,
                        sizeof(ngx_whl_pnode_t *), 
                        ngx_http_wh_bcompar);
                                              
